@@ -1,0 +1,16 @@
+
+sqlalchemy==2.0.23
+psycopg2-binary==2.9.9
+pydantic==2.4.2
+pydantic[email]==2.4.2
+python-dotenv==1.1.0
+python-json-logger==2.0.7
+loguru==0.7.2
+fastapi==0.115.12
+uvicorn==0.23.2
+httpx==0.25.0
+
+python-consul==1.1.0
+prometheus_client==0.21.1
+prometheus_fastapi_instrumentator==7.1.0
+circuitbreaker==2.1.3
