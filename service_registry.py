@@ -18,6 +18,14 @@ class ServiceRegistry:
         self.is_registered = False
         self.heartbeat_thread = None
         logger.info(f"Service registry initialized for {self.service_name}")
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(2)
+            s.connect((self.consul_host, self.consul_port))
+            s.close()
+            logger.info(f"Socket connection successful to Consul at {self.consul_host}:{self.consul_port}")
+        except Exception as e:
+            logger.error(f"Socket connection to Consul failed: {str(e)}")
 
     def register_service(self):
         """Register service with Consul"""
@@ -31,7 +39,7 @@ class ServiceRegistry:
                 port=self.service_port,
                 check={
                     "http": f"http://{container_ip}:{self.service_port}/health",
-                    "interval": "10s",
+                    "interval": "100s",
                     "timeout": "5s"
                 }
             )
