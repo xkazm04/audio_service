@@ -10,6 +10,7 @@ from contextlib import asynccontextmanager
 import time
 import json
 from routes import api_router  
+from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,6 +35,14 @@ app = FastAPI(
 )
 
 app.include_router(api_router, prefix="", tags=["Audio"])
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"]
+)
 
 Instrumentator().instrument(app).expose(app)
 
@@ -101,6 +110,7 @@ def health_check():
 def startup_db_client():
     database.Base.metadata.create_all(bind=database.engine)
     logger.info("Database tables created")
+
 
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 8004))

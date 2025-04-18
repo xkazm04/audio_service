@@ -39,7 +39,7 @@ class ServiceRegistry:
                 port=self.service_port,
                 check={
                     "http": f"http://{container_ip}:{self.service_port}/health",
-                    "interval": "100s",
+                    "interval": "15s",
                     "timeout": "5s"
                 }
             )
@@ -71,7 +71,7 @@ class ServiceRegistry:
             try:
                 if not self.is_registered:
                     self.register_service()
-                time.sleep(300)  
+                time.sleep(60)  
             except Exception as e:
                 logger.error(f"Heartbeat error: {str(e)}")
-                time.sleep(50) 
+                time.sleep(10) 
