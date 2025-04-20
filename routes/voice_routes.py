@@ -5,9 +5,11 @@ from models.models import Voice
 from database import get_db
 import os
 from dotenv import load_dotenv
-from fastapi import APIRouter, Depends, UploadFile, File, Form, HTTPException
+from fastapi import APIRouter, Depends, Form, HTTPException, File, UploadFile
+from typing import List
 from elevenlabs import ElevenLabs
-from functions.eleven_api import get_voice_settings, update_voice_settings, delete_voice_eleven, stream_speech
+from functions.eleven_api import get_voice_settings, update_voice_settings, delete_voice_eleven
+from functions.voice import create_voice_to_pg
 import logging
 from schemas.voice import VoiceResponse, VoiceSettingsModel
 
@@ -23,56 +25,68 @@ client = ElevenLabs(
 
 router = APIRouter()
 
-@router.post("/projects/{project_id}", response_model=VoiceResponse)
+@router.post("/", response_model=VoiceResponse)
 async def create_voice(
-    project_id: UUID,
-    voice_name: str = Form(...),
+    project_id: UUID = Form(...),
+    name: str = Form(...),
     description: str = Form(None),
     label: str = Form(None),
-    samples: list[UploadFile] = File(...),
+    samples: List[UploadFile] = File(...),
     db: Session = Depends(get_db),
 ):
-    # TBD what if project does not exist - erorr handling
+    # TBD what if project does not exist - error handling
     client = ElevenLabs(api_key=ELEVEN_API_KEY)
 
-    # Read all the sample files.
+    # Read all the sample files
     files_payload = []
     for sample in samples:
         contents = await sample.read()
         files_payload.append((sample.filename, contents))
 
-    # Call the ElevenLabs client to create a new voice.
+    # Call the ElevenLabs client to create a new voice
     try:
         resp = client.voices.add(
-            name=voice_name,
+            name=name,
             files=files_payload
         )
     except Exception as e:
-        db.commit()     
         raise HTTPException(
             status_code=500, detail=f"Error calling ElevenLabs: {str(e)}")
 
-    # Access the voice_id directly as an attribute.
+    # Access the voice_id directly as an attribute
     try:
         voice_id = resp.voice_id
     except AttributeError:
-        db.commit()       
         raise HTTPException(
             status_code=500, detail="ElevenLabs response did not contain a voice_id")
 
-    # Create a new Voice record in the database.
-    new_voice = Voice(
-        name=voice_name,
-        description=description,
+    # Create a new Voice record in the database
+    new_voice = create_voice_to_pg(
+        project_id=project_id,
+        name=name,
         voice_id=voice_id,
+        description=description,
         label=label,
-        project_id=project_id
+        db=db,
     )
-    db.add(new_voice)
-    db.commit()
-    db.refresh(new_voice)
     return new_voice
 
+@router.post("/test", response_model=VoiceResponse)
+def test_create_voice(
+    project_id: UUID = Form(...),
+    name: str = Form(...),
+    description: str = Form(None),
+    label: str = Form(None),
+    db: Session = Depends(get_db),
+):
+    voice = create_voice_to_pg(
+        project_id=project_id,
+        name=name,
+        description=description,
+        label=label,
+        db=db,
+    )
+    return voice
 
 @router.get("/project/{project_id}", response_model=list[VoiceResponse])
 def get_voices(project_id: UUID, db: Session = Depends(get_db)):

@@ -44,6 +44,7 @@ app.add_middleware(
     allow_headers=["*"]
 )
 
+
 Instrumentator().instrument(app).expose(app)
 
 @app.middleware("http")

@@ -36,8 +36,13 @@ class VoiceBase(BaseModel):
     label: str 
 
 
-class VoiceCreate(VoiceBase):
-    pass
+class VoiceCreate(BaseModel):
+    name: str
+    description: Optional[str] = None
+    label: Optional[str] = None
+    
+    class Config:
+        orm_mode = True
 
 
 class VoiceResponse(VoiceBase):
